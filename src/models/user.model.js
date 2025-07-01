@@ -27,7 +27,7 @@ const authSchema = new Schema(
     country: { type: String, required: true },
     emailVerified: { type: Boolean, default: false },
     isAdmin: { type: Boolean, default: false },
-    accountStatus: { type: String, enum: ['active', 'suspended', 'deleted'], default: 'active' },
+    accountStatus: { type: String, enum: ['active', 'suspended', 'deleted'], default: 'pending' },
   },
   { timestamps: true }
 );

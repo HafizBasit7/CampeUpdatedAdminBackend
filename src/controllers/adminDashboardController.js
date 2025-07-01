@@ -81,7 +81,7 @@ const getRecentActivities = async (req, res) => {
     const recentUsers = await User.find({ accountStatus: 'active', role: { $ne: 'admin' } })
       .sort({ updatedAt: -1 })
       .limit(5)
-      .select('name updatedAt');
+       .select('firstName lastName updatedAt');
 
     // Fetch 5 most recent rejected vehicles
     const recentRejectedVehicles = await Camper.find({ status: 'rejected' })
@@ -96,8 +96,8 @@ const getRecentActivities = async (req, res) => {
     recentUsers.forEach(user => {
       activities.push({
         type: 'user_approved',
-        user: user.name,
-        time: user.updatedAt.toLocaleString(),
+        user  : `${user.firstName} ${user.lastName}`,
+        time: user.updatedAt,
         status: 'approved'
       });
     });

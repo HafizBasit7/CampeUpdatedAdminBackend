@@ -5,7 +5,7 @@ const locationSchema = require('../common/location.model');
 
 const camperSchema = new Schema({
   user: { type: Schema.Types.ObjectId, ref: 'user', required: true },
-  status: { type: String, enum: ['pending','active','sold'], default: 'active' },
+  status: { type: String, enum: ['pending','active','sold', 'suspended', 'rejected'], default: 'active' },
   bookingType: { type: [String], enum: ['direct','regular'], required: true },
   camperType: { type: Schema.Types.ObjectId, ref: 'category', required: true },
   thumbnailImage: { type: String, required: true },
