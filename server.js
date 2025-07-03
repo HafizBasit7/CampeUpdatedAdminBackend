@@ -11,6 +11,7 @@ const adminAuthRoutes = require('./src/routes/adminAuth.routes');
 const adminUserRoutes = require('./src/routes/adminUser.routes');
 const admiVehiclesRouter = require('./src/routes/adminVechiclesRoute');
 const adminDashboardRouter = require('./src/routes/adminDashboardRoute');
+const orderRouter = require('./src/routes/adminOrderRoute');
 
 const app = express();
 app.use(helmet());
@@ -21,8 +22,10 @@ app.use(morgan('dev'));
 // Routes
 app.use('/admin', adminAuthRoutes);
 app.use('/admin/users', adminUserRoutes);
-app.use('/admin/vehicles',admiVehiclesRouter);
-app.use('/admin/dashboard',adminDashboardRouter)
+app.use('/admin/vehicles', admiVehiclesRouter);
+app.use('/admin/dashboard', adminDashboardRouter)
+app.use('/admin/orders', orderRouter);
+
 // app.use('/admin', adminAuthRoutes);
 
 // Health check
