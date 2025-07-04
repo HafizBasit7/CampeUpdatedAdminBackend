@@ -73,15 +73,15 @@ const getRecentActivities = async (req, res) => {
       .limit(5)
       .select('status updatedAt orderNumber user')
       .populate({
-  path: 'user',
-  select: 'firstName lastName'
-})
+        path: 'user',
+        select: 'firstName lastName'
+      })
 
     // Fetch 5 most recent users with active accountStatus
     const recentUsers = await User.find({ accountStatus: 'active', role: { $ne: 'admin' } })
       .sort({ updatedAt: -1 })
       .limit(5)
-       .select('firstName lastName updatedAt');
+      .select('firstName lastName updatedAt');
 
     // Fetch 5 most recent rejected vehicles
     const recentRejectedVehicles = await Camper.find({ status: 'rejected' })
@@ -96,7 +96,7 @@ const getRecentActivities = async (req, res) => {
     recentUsers.forEach(user => {
       activities.push({
         type: 'user_approved',
-        user  : `${user.firstName} ${user.lastName}`,
+        user: `${user.firstName} ${user.lastName}`,
         time: user.updatedAt,
         status: 'approved'
       });
@@ -136,6 +136,117 @@ const getRecentActivities = async (req, res) => {
   }
 };
 
+// controllers/pending.controller.js
+
+const getPendingItems = async (req, res) => {
+  try {
+    const { type } = req.params;
+
+    if (type === 'users') {
+      const pendingUsers = await User.find({ accountStatus: 'pending' })
+        .select('firstName lastName createdAt accountStatus') // Keep minimal fields
+        .sort({ createdAt: -1 });
+
+      const usersMapped = pendingUsers.map(user => ({
+        id: user._id,
+        name: `${user.firstName} ${user.lastName}`,
+        date: user.createdAt.toISOString().split('T')[0],
+        status: user.accountStatus.toUpperCase(),
+        details: 'New user registration',
+      }));
+
+      return res.status(200).json(usersMapped);
+    }
+
+    if (type === 'campers') {
+      const pendingCampers = await Camper.find({ status: 'pending' })
+        .select('name createdAt status')
+        .sort({ createdAt: -1 });
+
+      const campersMapped = pendingCampers.map(camper => ({
+        id: camper._id,
+        name: camper.name,
+        date: camper.createdAt.toISOString().split('T')[0],
+        status: camper.status.toUpperCase(),
+        details: 'New vehicle listing',
+      }));
+
+      return res.status(200).json(campersMapped);
+    }
+
+    return res.status(400).json({ error: 'Invalid type. Must be either "users" or "campers".' });
+  } catch (err) {
+    console.error('Error in getPendingItems:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const updateStatusForItem = async (req, res) => {
+  try {
+    const { type } = req.params;
+    const { id, status } = req.body;
+
+    if (!id || !status) {
+      return res.status(400).json({ error: 'Both id and status are required.' });
+    }
+
+    // Allowed statuses
+    const userStatuses = ['pending', 'active', 'suspended', 'deleted'];
+    const camperStatuses = ['pending', 'active', 'review', 'rejected', 'sold'];
+
+    if (type === 'users') {
+      if (!userStatuses.includes(status)) {
+        return res.status(400).json({ error: 'Invalid status for user.' });
+      }
+
+      const updatedUser = await User.findByIdAndUpdate(
+        id,
+        { accountStatus: status },
+        { new: true }
+      ).select('firstName lastName accountStatus');
+
+      if (!updatedUser) {
+        return res.status(404).json({ error: 'User not found.' });
+      }
+
+      return res.status(200).json({
+        id: updatedUser._id,
+        name: `${updatedUser.firstName} ${updatedUser.lastName}`,
+        status: updatedUser.accountStatus.toUpperCase(),
+        message: 'User status updated successfully',
+      });
+    }
+
+    if (type === 'campers') {
+      if (!camperStatuses.includes(status)) {
+        return res.status(400).json({ error: 'Invalid status for camper.' });
+      }
+
+      const updatedCamper = await Camper.findByIdAndUpdate(
+        id,
+        { status },
+        { new: true }
+      ).select('name status');
+
+      if (!updatedCamper) {
+        return res.status(404).json({ error: 'Camper not found.' });
+      }
+
+      return res.status(200).json({
+        id: updatedCamper._id,
+        name: updatedCamper.name,
+        status: updatedCamper.status.toUpperCase(),
+        message: 'Camper status updated successfully',
+      });
+    }
+
+    return res.status(400).json({ error: 'Invalid type. Must be either "users" or "campers".' });
+  } catch (err) {
+    console.error('Error in updateStatusForItem:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 
 
-module.exports = { getDashboardStats,getRecentActivities };
+
+module.exports = { getDashboardStats, getRecentActivities, getPendingItems ,updateStatusForItem};
