@@ -26,12 +26,14 @@ router.get(
 
 // PATCH /admin/users/:id/status
 router.patch(
-  '/:id/status',
+  '/:id/',
   [
     param('id').isMongoId(),
-    body('status').isIn(['active', 'suspended']).withMessage('Invalid status'),
+    body('status').optional().isIn(['active', 'suspended']),
+    body('verified').optional().isBoolean(),
+    body('role').optional().isIn(['admin', 'user']),
   ],
-  adminUserController.updateStatus
+  adminUserController.updateUser 
 );
 
 module.exports = router;

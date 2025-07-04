@@ -123,20 +123,32 @@ exports.getUsers = async (req, res, next) => {
 
 
 
-exports.updateStatus = async (req, res, next) => {
+exports.updateUser = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(422).json({ errors: errors.array() });
 
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, verified, role, reason } = req.body;
 
   try {
     const user = await User.findById(id);
     if (!user) return res.status(404).json({ message: 'User not found' });
-    user.accountStatus = status;
+
+    if (status) user.accountStatus = status;
+    if (typeof verified === 'boolean') user.emailVerified = verified;
+    if (role) user.isAdmin = role === 'admin';
+
+    // Optional: Store suspension reason
+    if (status === 'suspended' && reason) {
+      user.suspensionReason = reason;
+    }
+
     await user.save();
-    res.json({ success: true, message: 'Status updated' });
+
+    res.json({ success: true, message: 'User updated' });
   } catch (err) {
     next(err);
   }
 };
+
+

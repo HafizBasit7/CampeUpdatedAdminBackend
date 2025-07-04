@@ -4,40 +4,56 @@ const Booking = require('../models/booking.model');
 const Camper = require('../models/camper.model');
 const User = require('../models/user.model');
 
+// controllers/orderController.js
+
 const getAllOrders = async (req, res) => {
-    try {
-        const orderStatus = req.query.status || 'all';
-        const bookings = await Booking.find()
-            .populate({
-                path: 'user',
-                select: 'firstName lastName email'
-            })
-            .populate({
-                path: 'camper',
-                select: 'name licensePlate'
-            })
-            .sort({ createdAt: -1 }); // latest first
+  try {
+    const orderStatus = req.query.status || 'all';
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-        let formattedOrders = bookings.map((booking) => ({
-            id: booking._id,
-            customerName: `${booking.user?.firstName || ''} ${booking.user?.lastName || ''}`,
-            carModel: booking.camper?.name || 'N/A',
-            plateNumber: booking.camper?.licensePlate || 'N/A',
-            status: booking.status,
-            createdAt: booking.createdAt,
-            updatedAt: booking.updatedAt
-        }));
+    // Build base query
+    const query = orderStatus === 'all' ? {} : { status: orderStatus };
 
+    const total = await Booking.countDocuments(query);
 
-        if (orderStatus != 'all') {
-            formattedOrders = formattedOrders.filter((order) => order.status == orderStatus)
-        }
-        res.json({ success: true, data: formattedOrders });
-    } catch (err) {
-        console.error('Error fetching orders:', err);
-        res.status(500).json({ success: false, message: 'Failed to fetch orders' });
-    }
+    const bookings = await Booking.find(query)
+      .populate({
+        path: 'user',
+        select: 'firstName lastName email'
+      })
+      .populate({
+        path: 'camper',
+        select: 'name licensePlate'
+      })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const formattedOrders = bookings.map((booking) => ({
+      id: booking._id,
+      customerName: `${booking.user?.firstName || ''} ${booking.user?.lastName || ''}`,
+      carModel: booking.camper?.name || 'N/A',
+      plateNumber: booking.camper?.licensePlate || 'N/A',
+      status: booking.status,
+      createdAt: booking.createdAt,
+      updatedAt: booking.updatedAt
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        orders: formattedOrders,
+        total
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching orders:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch orders' });
+  }
 };
+
 
 // Helper function
 const formatOrder = (booking, camper, user) => {
